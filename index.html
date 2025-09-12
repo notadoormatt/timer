@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Task Timer</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏱️</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        html.dark body {
+            background-color: #111827; /* gray-900 */
+        }
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+        .calendar-day.today {
+            background-color: #e5e7eb;
+            font-weight: bold;
+        }
+        .calendar-day.selected {
+            background-color: #374151;
+            color: white;
+        }
+        .btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="min-h-screen flex flex-col md:flex-row p-4 sm:p-6 lg:p-8 gap-6">
+
+        <!-- Main Timer Section -->
+        <main class="w-full md:w-2/3 lg:w-3/4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 flex flex-col">
+            <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Project Task Timer</h1>
+                    <p id="current-date-display" class="text-gray-500 dark:text-gray-400 mt-1">Tracking for: September 11, 2025</p>
+                </div>
+                <div class="flex items-center gap-2 mt-4 sm:mt-0">
+                    <button id="theme-toggle-btn" class="btn p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">
+                        <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 5.05A1 1 0 003.636 6.464l.707.707a1 1 0 001.414-1.414l-.707-.707zM3 10a1 1 0 011-1h1a1 1 0 110 2H4a1 1 0 01-1-1zm7 6.414l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 011.414-1.414zM4.95 14.95a1 1 0 011.414 0l.707-.707a1 1 0 01-1.414-1.414l-.707.707z" clip-rule="evenodd" /></svg>
+                        <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" /></svg>
+                    </button>
+                    <button id="report-btn" class="btn bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800 px-4 py-2 rounded-lg text-sm font-medium shadow-sm hover:bg-gray-700 dark:hover:bg-gray-300">View Day Report</button>
+                    <button id="reset-day-btn" class="btn bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600">Reset Day</button>
+                </div>
+            </header>
+
+            <!-- Add Project Form -->
+            <form id="add-project-form" class="flex flex-col sm:flex-row items-center gap-3 mb-6">
+                <input type="text" id="project-name-input" placeholder="Enter new project name..." class="flex-grow w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-800 dark:focus:ring-gray-400 focus:border-transparent dark:text-gray-200">
+                <button type="submit" class="btn w-full sm:w-auto bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800 px-5 py-2 rounded-lg font-medium shadow-sm hover:bg-gray-700 dark:hover:bg-gray-300">Add Project</button>
+            </form>
+
+            <!-- Projects List -->
+            <div id="projects-container" class="flex-grow overflow-y-auto pr-2">
+                <!-- Project items will be injected here by JavaScript -->
+            </div>
+        </main>
+
+        <!-- Calendar Sidebar -->
+        <aside class="w-full md:w-1/3 lg:w-1/4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6">
+            <div id="calendar" class="w-full">
+                <div class="flex justify-between items-center mb-4">
+                    <button id="prev-month" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200">&lt;</button>
+                    <h2 id="month-year" class="font-bold text-lg dark:text-gray-100"></h2>
+                    <button id="next-month" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200">&gt;</button>
+                </div>
+                <div id="calendar-days-header" class="grid grid-cols-7 text-center text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">
+                    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                </div>
+                <div id="calendar-days" class="grid grid-cols-7 gap-1">
+                    <!-- Calendar days will be injected here -->
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- Report Modal -->
+    <div id="report-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-2xl transform transition-all" id="report-modal-content">
+            <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-3 mb-5">
+                <h2 class="text-xl font-bold dark:text-gray-100">Daily Report</h2>
+                <button id="close-modal-btn" class="text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 text-2xl">&times;</button>
+            </div>
+            <div id="report-body">
+                <!-- Report content will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const projectNameInput = document.getElementById('project-name-input');
+            const addProjectForm = document.getElementById('add-project-form');
+            const projectsContainer = document.getElementById('projects-container');
+            const currentDateDisplay = document.getElementById('current-date-display');
+            const reportBtn = document.getElementById('report-btn');
+            const resetDayBtn = document.getElementById('reset-day-btn');
+            const themeToggleBtn = document.getElementById('theme-toggle-btn');
+            const reportModal = document.getElementById('report-modal');
+            const reportModalContent = document.getElementById('report-modal-content');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const reportBody = document.getElementById('report-body');
+
+            // Calendar elements
+            const monthYearEl = document.getElementById('month-year');
+            const calendarDaysEl = document.getElementById('calendar-days');
+            const prevMonthBtn = document.getElementById('prev-month');
+            const nextMonthBtn = document.getElementById('next-month');
+
+            let selectedDate = new Date();
+            let calendarDate = new Date();
+            let timers = {}; // To hold setInterval instances
+
+            // --- LOCAL STORAGE HELPERS ---
+            function getStorageKey(date) {
+                return `projects_${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            }
+
+            function getProjects(date) {
+                const key = getStorageKey(date);
+                return JSON.parse(localStorage.getItem(key)) || [];
+            }
+
+            function saveProjects(date, projects) {
+                const key = getStorageKey(date);
+                localStorage.setItem(key, JSON.stringify(projects));
+            }
+
+            // --- DATE FORMATTING ---
+            function formatDateForDisplay(date) {
+                return date.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            }
+
+            // --- TIMER LOGIC & DISPLAY ---
+            function formatTime(ms) {
+                const totalSeconds = Math.floor(ms / 1000);
+                const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+                const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+                const seconds = String(totalSeconds % 60).padStart(2, '0');
+                return `${hours}:${minutes}:${seconds}`;
+            }
+
+            function updateTimerDisplay(projectId) {
+                const projects = getProjects(selectedDate);
+                const project = projects.find(p => p.id === projectId);
+                if (!project || !project.isRunning) return;
+
+                const timerElement = document.querySelector(`[data-id='${projectId}'] .timer`);
+                if (timerElement) {
+                    const elapsed = Date.now() - project.startTime;
+                    timerElement.textContent = formatTime(project.totalTime + elapsed);
+                }
+            }
+
+            function startTimer(projectId) {
+                const projects = getProjects(selectedDate);
+                const projectIndex = projects.findIndex(p => p.id === projectId);
+                if (projectIndex === -1 || projects[projectIndex].isRunning) return;
+
+                projects[projectIndex].isRunning = true;
+                projects[projectIndex].startTime = Date.now();
+                saveProjects(selectedDate, projects);
+
+                if (timers[projectId]) clearInterval(timers[projectId]);
+                timers[projectId] = setInterval(() => updateTimerDisplay(projectId), 1000);
+
+                renderProjects();
+            }
+
+            function stopTimer(projectId) {
+                const projects = getProjects(selectedDate);
+                const projectIndex = projects.findIndex(p => p.id === projectId);
+                if (projectIndex === -1 || !projects[projectIndex].isRunning) return;
+                
+                const elapsed = Date.now() - projects[projectIndex].startTime;
+                projects[projectIndex].totalTime += elapsed;
+                projects[projectIndex].isRunning = false;
+                projects[projectIndex].startTime = null;
+                saveProjects(selectedDate, projects);
+                
+                clearInterval(timers[projectId]);
+                delete timers[projectId];
+                
+                renderProjects();
+            }
+
+            // --- PROJECT CRUD ---
+            addProjectForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const projectName = projectNameInput.value.trim();
+                if (!projectName) return;
+
+                const projects = getProjects(selectedDate);
+                projects.unshift({
+                    id: Date.now(),
+                    name: projectName,
+                    totalTime: 0,
+                    comment: '',
+                    isRunning: false,
+                    startTime: null,
+                });
+                saveProjects(selectedDate, projects);
+                projectNameInput.value = '';
+                renderProjects();
+            });
+
+            function deleteProject(projectId) {
+                let projects = getProjects(selectedDate);
+                projects = projects.filter(p => p.id !== projectId);
+                saveProjects(selectedDate, projects);
+                if (timers[projectId]) {
+                    clearInterval(timers[projectId]);
+                    delete timers[projectId];
+                }
+                renderProjects();
+            }
+
+            function updateComment(projectId, comment) {
+                const projects = getProjects(selectedDate);
+                const projectIndex = projects.findIndex(p => p.id === projectId);
+                if (projectIndex !== -1) {
+                    projects[projectIndex].comment = comment;
+                    saveProjects(selectedDate, projects);
+                }
+            }
+            
+            // --- UI RENDERING ---
+            function renderProjects() {
+                projectsContainer.innerHTML = '';
+                const projects = getProjects(selectedDate);
+
+                if (projects.length === 0) {
+                    projectsContainer.innerHTML = `
+                        <div class="text-center text-gray-400 dark:text-gray-500 py-10">
+                            <p>No projects for this day. Add one to get started.</p>
+                            <button id="copy-prev-day-btn" class="btn mt-4 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600">Copy From Yesterday</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                projects.forEach(project => {
+                    const projectEl = document.createElement('div');
+                    projectEl.className = 'flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border-b border-gray-100 dark:border-gray-700';
+                    projectEl.dataset.id = project.id;
+                    
+                    let displayTime = project.totalTime;
+                    if (project.isRunning) {
+                         displayTime += Date.now() - project.startTime;
+                    }
+
+                    projectEl.innerHTML = `
+                        <div class="w-full sm:w-1/3 font-medium truncate dark:text-gray-200" title="${project.name}">${project.name}</div>
+                        <div class="w-full sm:w-1/3 flex items-center gap-3">
+                            <div class="timer text-xl font-mono w-28 dark:text-gray-300">${formatTime(displayTime)}</div>
+                            <button class="toggle-btn btn text-sm font-medium py-2 px-4 rounded-lg w-24 ${project.isRunning ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900/80' : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900/80'}">
+                                ${project.isRunning ? 'Stop' : 'Start'}
+                            </button>
+                        </div>
+                        <div class="w-full sm:w-1/3 flex items-center gap-2">
+                            <input type="text" class="comment-input flex-grow px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-transparent rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-800 dark:focus:ring-gray-400 dark:text-gray-200" placeholder="Comments..." value="${project.comment}">
+                            <button class="delete-btn text-gray-400 hover:text-red-600 dark:hover:text-red-400 p-2 rounded-full text-lg">&times;</button>
+                        </div>
+                    `;
+                    projectsContainer.appendChild(projectEl);
+
+                    // Re-initialize interval if timer is running on render
+                    if (project.isRunning) {
+                       if (timers[project.id]) clearInterval(timers[project.id]);
+                       timers[project.id] = setInterval(() => updateTimerDisplay(project.id), 1000);
+                    }
+                });
+            }
+
+            projectsContainer.addEventListener('click', (e) => {
+                const target = e.target.closest('button');
+                if (!target) return;
+                
+                const projectEl = e.target.closest('[data-id]');
+                const projectId = Number(projectEl.dataset.id);
+
+                if (target.classList.contains('toggle-btn')) {
+                    const projects = getProjects(selectedDate);
+                    const project = projects.find(p => p.id === projectId);
+                    if (project.isRunning) {
+                        stopTimer(projectId);
+                    } else {
+                        startTimer(projectId);
+                    }
+                } else if (target.classList.contains('delete-btn')) {
+                    deleteProject(projectId);
+                }
+            });
+
+            projectsContainer.addEventListener('click', (e) => {
+                if (e.target && e.target.id === 'copy-prev-day-btn') {
+                    const prevDay = new Date(selectedDate);
+                    prevDay.setDate(selectedDate.getDate() - 1);
+
+                    const prevDayProjects = getProjects(prevDay);
+                    if (prevDayProjects.length === 0) {
+                        console.log("No projects to copy from the previous day.");
+                        e.target.textContent = "Nothing to Copy";
+                        e.target.disabled = true;
+                        setTimeout(() => {
+                           e.target.textContent = "Copy From Yesterday";
+                           e.target.disabled = false;
+                        }, 2000);
+                        return;
+                    }
+
+                    const currentDayProjects = getProjects(selectedDate);
+                    const currentProjectNames = new Set(currentDayProjects.map(p => p.name));
+
+                    const projectsToCopy = prevDayProjects
+                        .filter(p => !currentProjectNames.has(p.name))
+                        .map((p, index) => ({
+                            id: Date.now() + index, // Ensure unique ID
+                            name: p.name,
+                            totalTime: 0,
+                            comment: '',
+                            isRunning: false,
+                            startTime: null,
+                        }));
+
+                    if (projectsToCopy.length > 0) {
+                        const combinedProjects = [...projectsToCopy.reverse(), ...currentDayProjects];
+                        saveProjects(selectedDate, combinedProjects);
+                        renderProjects();
+                    } else {
+                         e.target.textContent = "All Copied";
+                         e.target.disabled = true;
+                         setTimeout(() => {
+                           e.target.textContent = "Copy From Yesterday";
+                           e.target.disabled = false;
+                        }, 2000);
+                    }
+                }
+            });
+
+            projectsContainer.addEventListener('input', (e) => {
+                 if(e.target.classList.contains('comment-input')) {
+                    const projectEl = e.target.closest('[data-id]');
+                    const projectId = Number(projectEl.dataset.id);
+                    updateComment(projectId, e.target.value);
+                 }
+            });
+
+            // --- REPORT MODAL ---
+            function showReport() {
+                reportBody.innerHTML = '';
+                const projects = getProjects(selectedDate);
+                
+                let content = `<p class="mb-4 text-gray-600 dark:text-gray-400">Summary for ${formatDateForDisplay(selectedDate)}</p>`;
+
+                if (projects.length === 0) {
+                    content += `<div class="text-center text-gray-400 dark:text-gray-500 py-6">No time recorded for this day.</div>`;
+                } else {
+                    content += `<div class="space-y-3">`;
+                    projects.forEach(project => {
+                        let finalTime = project.totalTime;
+                        if(project.isRunning) {
+                           // For running timers, add elapsed time up to now for the report
+                           finalTime += Date.now() - project.startTime;
+                        }
+
+                        const totalMinutes = finalTime / (1000 * 60);
+                        const roundedMinutes = Math.ceil(totalMinutes / 30) * 30;
+                        const roundedHours = roundedMinutes / 60;
+                        const roundedTimeStr = `${roundedHours.toFixed(1)}h`;
+
+                        content += `
+                            <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg grid grid-cols-5 gap-4 items-center">
+                                <div class="font-medium col-span-2 truncate dark:text-gray-200" title="${project.name}">${project.name}</div>
+                                <div class="text-gray-600 dark:text-gray-400 col-span-2">${project.comment || '<i>No comment</i>'}</div>
+                                <div class="font-bold text-lg text-right col-span-1 dark:text-gray-100">${roundedTimeStr}</div>
+                            </div>
+                        `;
+                    });
+                    content += `</div>`;
+                }
+                
+                reportBody.innerHTML = content;
+                reportModal.classList.remove('hidden');
+            }
+
+            reportBtn.addEventListener('click', showReport);
+            closeModalBtn.addEventListener('click', () => reportModal.classList.add('hidden'));
+            reportModal.addEventListener('click', (e) => {
+                if (e.target === reportModal) {
+                    reportModal.classList.add('hidden');
+                }
+            });
+
+            // --- COPY FROM PREVIOUS DAY ---
+            // This logic is now handled via event delegation on projectsContainer
+
+            // --- RESET DAY ---
+            resetDayBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to delete all entries for this day? This cannot be undone.')) {
+                    // Clear all running timers for the day
+                    Object.keys(timers).forEach(timerId => clearInterval(timers[timerId]));
+                    timers = {};
+                    
+                    const key = getStorageKey(selectedDate);
+                    localStorage.removeItem(key);
+                    renderProjects();
+                }
+            });
+
+            // --- CALENDAR LOGIC ---
+            function renderCalendar() {
+                calendarDaysEl.innerHTML = '';
+                const today = new Date();
+                const month = calendarDate.getMonth();
+                const year = calendarDate.getFullYear();
+
+                monthYearEl.textContent = `${calendarDate.toLocaleString('default', { month: 'long' })} ${year}`;
+                
+                const firstDayOfMonth = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                // Add empty placeholders for days before the 1st
+                for (let i = 0; i < firstDayOfMonth; i++) {
+                    const emptyDiv = document.createElement('div');
+                    calendarDaysEl.appendChild(emptyDiv);
+                }
+                
+                // Add actual days of the month
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayEl = document.createElement('button');
+                    dayEl.className = 'calendar-day h-9 w-9 flex items-center justify-center rounded-full text-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 dark:text-gray-200';
+                    dayEl.textContent = day;
+                    dayEl.dataset.day = day;
+
+                    const currentDate = new Date(year, month, day);
+                    
+                    // Highlight today
+                    if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                        dayEl.classList.add('today');
+                    }
+                    
+                    // Highlight selected day
+                    if (day === selectedDate.getDate() && month === selectedDate.getMonth() && year === selectedDate.getFullYear()) {
+                        dayEl.classList.add('selected');
+                        dayEl.classList.add('dark:bg-gray-200', 'dark:text-gray-800');
+                    }
+
+                    dayEl.addEventListener('click', () => {
+                        selectedDate = currentDate;
+                        // Clear running timer intervals when switching days
+                        Object.values(timers).forEach(clearInterval);
+                        timers = {};
+                        updateUIForNewDate();
+                    });
+
+                    calendarDaysEl.appendChild(dayEl);
+                }
+            }
+            
+            prevMonthBtn.addEventListener('click', () => {
+                calendarDate.setMonth(calendarDate.getMonth() - 1);
+                renderCalendar();
+            });
+
+            nextMonthBtn.addEventListener('click', () => {
+                calendarDate.setMonth(calendarDate.getMonth() + 1);
+                renderCalendar();
+            });
+
+            function updateUIForNewDate() {
+                currentDateDisplay.textContent = `Tracking for: ${formatDateForDisplay(selectedDate)}`;
+                renderCalendar();
+                renderProjects();
+            }
+
+            // --- DARK MODE ---
+            const sunIcon = document.getElementById('sun-icon');
+            const moonIcon = document.getElementById('moon-icon');
+
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    sunIcon.classList.add('hidden');
+                    moonIcon.classList.remove('hidden');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    sunIcon.classList.remove('hidden');
+                    moonIcon.classList.add('hidden');
+                }
+                localStorage.setItem('theme', theme);
+                renderCalendar(); // Re-render to apply selected day styles correctly
+            }
+
+            themeToggleBtn.addEventListener('click', () => {
+                const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+                applyTheme(newTheme);
+            });
+
+
+            // --- INITIALIZATION ---
+            function init() {
+                const savedTheme = localStorage.getItem('theme');
+                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (savedTheme) {
+                    applyTheme(savedTheme);
+                } else if (prefersDark) {
+                    applyTheme('dark');
+                } else {
+                    applyTheme('light');
+                }
+                updateUIForNewDate();
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>
+
