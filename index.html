@@ -6,38 +6,40 @@
     <title>Project Task Timer</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏱️</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Configure Tailwind for dark mode -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8f9fa;
-        }
-        html.dark body {
-            background-color: #111827; /* gray-900 */
-        }
         /* Custom scrollbar for a cleaner look */
         ::-webkit-scrollbar {
             width: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: #f1f1f1; /* gray-100 */
+        }
+        html.dark ::-webkit-scrollbar-track {
+            background: #1f2937; /* gray-800 */
         }
         ::-webkit-scrollbar-thumb {
-            background: #d1d5db;
+            background: #d1d5db; /* gray-300 */
             border-radius: 3px;
         }
+        html.dark ::-webkit-scrollbar-thumb {
+            background: #4b5563; /* gray-600 */
+        }
         ::-webkit-scrollbar-thumb:hover {
-            background: #9ca3af;
+            background: #9ca3af; /* gray-400 */
         }
-        .calendar-day.today {
-            background-color: #e5e7eb;
-            font-weight: bold;
-        }
-        .calendar-day.selected {
-            background-color: #374151;
-            color: white;
+        html.dark ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* gray-500 */
         }
         .btn {
             transition: all 0.2s ease-in-out;
@@ -47,7 +49,7 @@
         }
     </style>
 </head>
-<body class="text-gray-800">
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200" style="font-family: 'Inter', sans-serif;">
 
     <div class="min-h-screen flex flex-col md:flex-row p-4 sm:p-6 lg:p-8 gap-6">
 
@@ -303,26 +305,7 @@
             }
 
             projectsContainer.addEventListener('click', (e) => {
-                const target = e.target.closest('button');
-                if (!target) return;
-                
-                const projectEl = e.target.closest('[data-id]');
-                const projectId = Number(projectEl.dataset.id);
-
-                if (target.classList.contains('toggle-btn')) {
-                    const projects = getProjects(selectedDate);
-                    const project = projects.find(p => p.id === projectId);
-                    if (project.isRunning) {
-                        stopTimer(projectId);
-                    } else {
-                        startTimer(projectId);
-                    }
-                } else if (target.classList.contains('delete-btn')) {
-                    deleteProject(projectId);
-                }
-            });
-
-            projectsContainer.addEventListener('click', (e) => {
+                // Handle the "Copy From Yesterday" button which is inside the container when it's empty
                 if (e.target && e.target.id === 'copy-prev-day-btn') {
                     const prevDay = new Date(selectedDate);
                     prevDay.setDate(selectedDate.getDate() - 1);
@@ -365,6 +348,28 @@
                            e.target.disabled = false;
                         }, 2000);
                     }
+                    return; // Stop processing after handling the copy button
+                }
+
+                // Handle clicks on buttons within project items
+                const target = e.target.closest('button');
+                if (!target) return;
+                
+                const projectEl = e.target.closest('[data-id]');
+                if (!projectEl) return; // Ignore if the button is not in a project item
+
+                const projectId = Number(projectEl.dataset.id);
+
+                if (target.classList.contains('toggle-btn')) {
+                    const projects = getProjects(selectedDate);
+                    const project = projects.find(p => p.id === projectId);
+                    if (project.isRunning) {
+                        stopTimer(projectId);
+                    } else {
+                        startTimer(projectId);
+                    }
+                } else if (target.classList.contains('delete-btn')) {
+                    deleteProject(projectId);
                 }
             });
 
@@ -459,25 +464,25 @@
                 // Add actual days of the month
                 for (let day = 1; day <= daysInMonth; day++) {
                     const dayEl = document.createElement('button');
-                    dayEl.className = 'calendar-day h-9 w-9 flex items-center justify-center rounded-full text-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 dark:text-gray-200';
-                    dayEl.textContent = day;
-                    dayEl.dataset.day = day;
+                    
+                    const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+                    const isSelected = day === selectedDate.getDate() && month === selectedDate.getMonth() && year === selectedDate.getFullYear();
 
-                    const currentDate = new Date(year, month, day);
-                    
-                    // Highlight today
-                    if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-                        dayEl.classList.add('today');
+                    let dayClasses = 'calendar-day h-9 w-9 flex items-center justify-center rounded-full text-sm cursor-pointer';
+
+                    if (isSelected) {
+                        dayClasses += ' bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800 font-bold';
+                    } else if (isToday) {
+                        dayClasses += ' bg-gray-200 dark:bg-gray-700 font-bold';
+                    } else {
+                        dayClasses += ' hover:bg-gray-200 dark:hover:bg-gray-700';
                     }
                     
-                    // Highlight selected day
-                    if (day === selectedDate.getDate() && month === selectedDate.getMonth() && year === selectedDate.getFullYear()) {
-                        dayEl.classList.add('selected');
-                        dayEl.classList.add('dark:bg-gray-200', 'dark:text-gray-800');
-                    }
+                    dayEl.className = dayClasses;
+                    dayEl.textContent = day;
 
                     dayEl.addEventListener('click', () => {
-                        selectedDate = currentDate;
+                        selectedDate = new Date(year, month, day);
                         // Clear running timer intervals when switching days
                         Object.values(timers).forEach(clearInterval);
                         timers = {};
@@ -547,4 +552,3 @@
     </script>
 </body>
 </html>
-
